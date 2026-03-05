@@ -1,7 +1,7 @@
 # Istruzioni per lo Sviluppo Matlab - Progetto Hairer RK
 
 Agisci come un esperto di analisi numerica. Implementa i seguenti moduli Matlab seguendo fedelmente le formule del testo di Hairer & Nörsett.
-Nella cartella Project c'è un progetto simile a quello che andrai a fare. Puoi guardare le funzioni per farti un idea di quello che andrai a fare, ma NON devi assolutamente modificarle o usarle nel progetto che andrai a creare. Se tra quelle c'è una funzione che ti serve la dovrai riscrivere.
+Nella cartella Project c'è un progetto simile a quello che andrai a fare. Puoi guardare le funzioni per farti un idea di quello che andrai a fare, ma NON devi assolutamente modificarle o usarle nel progetto che andrai a creare. Se tra quelle c'è una funzione che ti serve la dovrai riscrivere. Inoltre NON considerare la cartella ERK_trib
 
 ## 1. Modulo Controllo Passo (step_control.m)
 Implementa la formula (4.13):
