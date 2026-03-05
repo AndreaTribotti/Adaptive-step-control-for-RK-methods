@@ -190,6 +190,6 @@ for j=1:3
     end
     
     % ERK3
-     [t,u,num_fval] = ERK3(fun,t_span,y0,H_fixed,b3H,c3H,A3H);
+    [t,u,num_fval] = ERK3(fun,t_span,y0,H_fixed,b3H,c3H,A3H);
 end
 
