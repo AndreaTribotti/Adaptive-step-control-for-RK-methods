@@ -124,7 +124,7 @@ for j=1:3
     end
 
 
-    figure('Name', ['Analisi Step Control for ',labels{j}]);
+    figure;
 
     % Separiamo i dati per il plot
     t_acc = t_history(is_accepted == 1);
@@ -141,7 +141,7 @@ for j=1:3
     grid on;
     xlabel('Tempo t');
     ylabel('Ampiezza passo h');
-    title('Evoluzione del passo h (Accettati vs Rifiutati)');
+    title(['Evoluzione del passo h per ',labels{j}]);
     legend('Step Accettati', 'Step Rifiutati', 'Location', 'best');
     
     % Aggiunta estetica: limite superiore/inferiore
