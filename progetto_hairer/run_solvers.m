@@ -90,7 +90,7 @@ for j = 1:length(functions)
         if err < 1
             % PASSO ACCETTATO
             is_accepted(end+1) = 1;
-            err_history(end+1) = err;
+            err_history(end+1) = norm(y_low-y_high);
             
             t_prev = t_current;
             t_current = t_current + h;
@@ -157,10 +157,22 @@ for j = 1:length(functions)
     hold on; grid on;
     plot(t_embedded, y_embedded(1,:), 'g-', 'LineWidth', 1.5, 'DisplayName', 'y1 (Embedded)');
     if size(y0, 1) == 2
-        plot(t_embedded, y_embedded(2,:), 'k-', 'LineWidth', 1.5, 'DisplayName', 'y2 (Embedded)');
+        plot(t_embedded, y_embedded(2,:), 'c-', 'LineWidth', 1.5, 'DisplayName', 'y2 (Embedded)');
     end
     if ~isempty(sol)
-        fplot(sol, t_span, 'r--', 'DisplayName', 'Soluzione Esatta');
+        %fplot(sol, t_span, 'r--', 'DisplayName', 'Soluzione Esatta');
+        % 1. Crea un vettore di tempi ad alta risoluzione
+        t_fine = linspace(t_span(1), t_span(end), 1000);
+        
+        % 2. Valuta la soluzione di riferimento (restituisce una matrice)
+        y_fine = sol(t_fine); 
+        
+        % 3. Usa plot estraendo le singole righe (variabili) della matrice
+        plot(t_fine, y_fine(1,:), 'r--', 'DisplayName', 'Soluzione Riferimento y_1');
+        hold on;
+        if length(y0)==2
+            plot(t_fine, y_fine(2,:), 'b--', 'DisplayName', 'Soluzione Riferimento y_2');
+        end
     end
     title(['Soluzione ODE: ', labels{j}]);
     xlabel('Tempo t');
