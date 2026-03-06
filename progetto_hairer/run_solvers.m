@@ -1,135 +1,170 @@
-% SCRIPT DI TEST E VALIDAZIONE PER I SOLUTORI ODE
-% ----------------------------------------------------
-% Questo script esegue e confronta i diversi solutori ODE implementati
-% sul problema del Brusselator.
-
 clear; close all; clc;
 addpath(pwd); % Assicura che i file nella cartella corrente siano visibili
 
-%% 1. Impostazione del Problema
-fun = @brusselator;
-y0 = [1.5; 3];
-t_span = [0, 20];
-x0 = t_span(1);
+% Carico ODEs e soluzioni analitiche
+odes_examples
 
-% Parametri per il controllo del passo
-atol = 1e-4;
-rtol = 1e-4;
-p_embedded = 4; % Ordine del metodo embedded (4(3))
+% Carico tabelle di Butcher
+butcher_matrices
 
-% Calcolo del passo iniziale suggerito
-h0 = initial_step_selector(fun, x0, y0, p_embedded, atol, rtol);
-fprintf('Passo iniziale suggerito: h = %.6f', h0);
-
-
-%% 2. Esecuzione dei Solutori
-% Per semplicità, usiamo un numero fisso di passi per i solutori non adattivi
-n_steps_fixed = 200;
-H_fixed = (t_span(2) - t_span(1)) / n_steps_fixed;
-
-% --- Richardson Solver (Fixed Step) ---
-fprintf('Esecuzione Richardson Solver...');
-y_richardson = zeros(2, n_steps_fixed + 1);
-y_richardson(:, 1) = y0;
-t_richardson = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
-for i = 1:n_steps_fixed
-    y_richardson(:, i+1) = richardson_solver(fun, t_richardson(i), y_richardson(:, i), H_fixed);
+% Seleziona il metodo di default definito nel file delle matrici
+selected_method_index = find(strcmp({methods.name}, default_method));
+if isempty(selected_method_index)
+    error('Il metodo di default "%s" non è stato trovato.', default_method);
 end
+tableau = methods(selected_method_index);
+fprintf('--- Metodo Runge-Kutta selezionato: %s ---\n\n', tableau.name);
 
-% --- Gauss-Legendre Solver (Fixed Step) ---
-fprintf('Esecuzione Gauss-Legendre Solver...');
-y_gauss = zeros(2, n_steps_fixed + 1);
-y_gauss(:, 1) = y0;
-t_gauss = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
-for i = 1:n_steps_fixed
-    y_gauss(:, i+1) = gauss_legendre_solver(fun, t_gauss(i), y_gauss(:, i), H_fixed);
-end
+% SCRIPT DI TEST E VALIDAZIONE
+% ----------------------------------------------------
+functions = {@brusselator, f1, f2};
+solutions = {[], sol1, sol2}; % Aggiunto array di soluzioni
+T = [20, 20, 2];
+y0s = {[1.5; 3], 1, 5};
+labels = {'Brusselator', 'y''=3+cos(t)-y', 'y''=y(2+y)(2-y)'};
 
-% --- Embedded Solver (Adaptive Step) ---
-fprintf('Esecuzione Embedded Solver (adattivo)...');
-t_current = x0;
-y_current = y0;
-h = h0; % Usa il passo iniziale calcolato
-k1 = []; % Per FSAL, inizialmente vuoto
-
-% Array per salvare i risultati
-t_embedded = t_current;
-y_embedded = y_current;
-
-% Parametri per il controllo del passo
-q = 3; % Ordine dell'errore per il metodo 4(3)
+% Parametri comuni per il controllo del passo
+atol = 1e-5;
+rtol = 1e-5;
 fac = 0.8;
 facmin = 0.1;
 facmax = 5.0;
-max_steps = 5000;
-steps_taken = 0;
-rejected_steps = 0;
+max_steps = 10000;
 
-while t_current < t_span(2) && steps_taken < max_steps
-    steps_taken = steps_taken + 1;
-    if t_current + h > t_span(2)
-        h = t_span(2) - t_current; % Adatta l'ultimo passo
-    end
-    
-    % Esegui un passo e calcola l'errore
-    [y_high, ~, k_next, err] = embedded_solver(fun, t_current, y_current, h, k1, atol, rtol);
+for j = 1:length(functions)
+    fprintf('--- Calcolo in corso per l''ODE: %s ---\n', labels{j})
+    fun = functions{j};
+    sol = solutions{j};
+    t_span = [0, T(j)];
+    x0 = t_span(1);
+    y0 = y0s{j};
 
-    % Logica di accettazione/rifiuto del passo
-    if err < 1
-        % Passo accettato
-        t_current = t_current + h;
-        y_current = y_high;
-        k1 = k_next; % FSAL
-        
-        % Salva il risultato
-        t_embedded(:, end+1) = t_current;
-        y_embedded(:, end+1) = y_current;
-        
-        % Calcola il nuovo passo (aumenta)
-        facmax_current = facmax;
-    else
-        % Passo rifiutato
-        rejected_steps = rejected_steps + 1;
-        % Calcola il nuovo passo (diminuisce)
-        % Come da istruzioni, dopo un rifiuto, facmax per il passo successivo è 1
-        facmax_current = 1;
+    % Calcolo del passo iniziale
+    p_richardson = 2; % Ordine per Richardson
+    h0 = initial_step_selector(fun, x0, y0, p_richardson, atol, rtol);
+    fprintf('Passo iniziale suggerito: h = %.6f\n', h0);
+
+    % Se non è disponibile una soluzione analitica, calcolane una di riferimento
+    if isempty(sol)
+        fprintf('Calcolo della soluzione di riferimento ad alta precisione con ode15s...\n');
+        options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
+        sol_struct = ode15s(fun, t_span, y0, options);
+        sol = @(t) deval(sol_struct, t);
+        fprintf('Soluzione di riferimento calcolata.\n');
     end
+
+    % --- Embedded Solver (Adaptive Step) ---
+    fprintf('Esecuzione Embedded Solver (adattivo)...\n');
+    t_current = x0;
+    y_current = y0;
+    h = h0;
+    k1 = [];
+
+    % Array per i risultati
+    t_embedded = t_current;
+    y_embedded = y_current;
     
-    h = step_control(h, err, q, fac, facmin, facmax_current);
+    % Vettori per il log
+    h_history = [];
+    t_history = [];
+    is_accepted = [];
+    err_history = [];
+    global_err_history = [];
+    exact_local_err_history = [];
+
+    steps_taken = 0;
+    rejected_steps = 0;
+    
+    while t_current < t_span(2) && steps_taken < max_steps
+        steps_taken = steps_taken + 1;
+        
+        if t_current + h > t_span(2)
+            h = t_span(2) - t_current;
+        end
+        
+        [y_high, y_low, k_next, err] = embedded_solver(fun, t_current, y_current, h, k1, atol, rtol, tableau);
+    
+        t_history(end+1) = t_current;
+        h_history(end+1) = h;
+    
+        if err < 1
+            % PASSO ACCETTATO
+            is_accepted(end+1) = 1;
+            err_history(end+1) = err;
+            
+            t_prev = t_current;
+            t_current = t_current + h;
+            y_current = y_high;
+            k1 = k_next;
+            
+            t_embedded(:, end+1) = t_current;
+            y_embedded(:, end+1) = y_current;
+            facmax_current = facmax;
+
+            if ~isempty(sol)
+                % Calcolo errore globale
+                global_err = norm(y_current - sol(t_current));
+                global_err_history(end+1) = global_err;
+                
+                % Calcolo errore locale esatto
+                y_true_start = sol(t_prev);
+                [y_num_onestep, ~, ~, ~] = embedded_solver(fun, t_prev, y_true_start, h, [], atol, rtol, tableau);
+                exact_local_err = norm(y_num_onestep - sol(t_current));
+                exact_local_err_history(end+1) = exact_local_err;
+            end
+            
+        else
+            % PASSO RIFIUTATO
+            is_accepted(end+1) = 0;
+            rejected_steps = rejected_steps + 1;
+            facmax_current = 1;
+        end
+        
+        h = step_control(h, err, tableau.q, fac, facmin, facmax_current);
+    end
+
+    % Plot evoluzione passo h
+    figure;
+    t_acc = t_history(is_accepted == 1);
+    h_acc = h_history(is_accepted == 1);
+    t_rej = t_history(is_accepted == 0);
+    h_rej = h_history(is_accepted == 0);
+    
+    semilogy(t_acc, h_acc, 'b.-', 'DisplayName', 'Passi Accettati'); hold on;
+    semilogy(t_rej, h_rej, 'rx', 'DisplayName', 'Passi Rifiutati');
+    grid on; xlabel('Tempo t'); ylabel('Ampiezza passo h');
+    title(['Evoluzione del passo h per ', labels{j}]);
+    legend('show');
+
+    fprintf('Embedded Solver: %d passi totali, %d accettati, %d rifiutati.\n\n', steps_taken, length(h_acc), rejected_steps);
+    
+    % Plot degli errori se la soluzione analitica è disponibile
+    if ~isempty(sol)
+        figure;
+        semilogy(t_embedded(2:end), err_history, 'b-', 'DisplayName', 'Stima Errore Locale');
+        hold on;
+        semilogy(t_embedded(2:end), global_err_history, 'r-', 'DisplayName', 'Errore Globale');
+        semilogy(t_embedded(2:end), exact_local_err_history, 'g--', 'DisplayName', 'Errore Locale Esatto');
+        grid on;
+        xlabel('Tempo t');
+        ylabel('Errore');
+        title(['Analisi degli Errori per ', labels{j}]);
+        legend('show', 'Location', 'best');
+    end
+
+    % Plot della soluzione
+    figure;
+    hold on; grid on;
+    plot(t_embedded, y_embedded(1,:), 'g-', 'LineWidth', 1.5, 'DisplayName', 'y1 (Embedded)');
+    if size(y0, 1) == 2
+        plot(t_embedded, y_embedded(2,:), 'k-', 'LineWidth', 1.5, 'DisplayName', 'y2 (Embedded)');
+    end
+    if ~isempty(sol)
+        fplot(sol, t_span, 'r--', 'DisplayName', 'Soluzione Esatta');
+    end
+    title(['Soluzione ODE: ', labels{j}]);
+    xlabel('Tempo t');
+    ylabel('Valore y');
+    legend('show', 'Location', 'best');
+    hold off;
 end
-fprintf('Embedded Solver: %d passi accettati, %d passi rifiutati.', steps_taken - rejected_steps, rejected_steps);
-
-
-%% 3. Visualizzazione dei Risultati
-figure('Name', 'Confronto Solutori ODE sul Problema del Brusselator');
-hold on;
-grid on;
-
-plot(t_richardson, y_richardson(1,:), 'r--', 'DisplayName', 'y1 (Richardson)');
-plot(t_gauss, y_gauss(1,:), 'b-.', 'DisplayName', 'y1 (Gauss-Legendre)');
-plot(t_embedded, y_embedded(1,:), 'g-', 'LineWidth', 1.5, 'DisplayName', 'y1 (Embedded Adattivo)');
-
-plot(t_richardson, y_richardson(2,:), 'm--', 'DisplayName', 'y2 (Richardson)');
-plot(t_gauss, y_gauss(2,:), 'c-.', 'DisplayName', 'y2 (Gauss-Legendre)');
-plot(t_embedded, y_embedded(2,:), 'k-', 'LineWidth', 1.5, 'DisplayName', 'y2 (Embedded Adattivo)');
-
-title('Sistema del Brusselator');
-xlabel('Tempo t');
-ylabel('Valore y');
-legend('show', 'Location', 'best');
-hold off;
-
-%% Confronto y1 vs y2
-figure('Name', 'Spazio delle Fasi del Brusselator');
-hold on;
-grid on;
-
-plot(y_richardson(1,:), y_richardson(2,:), 'r--', 'DisplayName', 'Richardson');
-plot(y_gauss(1,:), y_gauss(2,:), 'b-.', 'DisplayName', 'Gauss-Legendre');
-plot(y_embedded(1,:), y_embedded(2,:), 'g-', 'LineWidth', 1.5, 'DisplayName', 'Embedded Adattivo');
-
-title('Spazio delle Fasi (y1 vs y2)');
-xlabel('y1');
-ylabel('y2');
-legend('show', 'Location', 'best');
-hold off;

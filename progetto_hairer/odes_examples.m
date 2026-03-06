@@ -13,6 +13,7 @@ f1=@(t,y)(3+cos(t)-y);
 % f2
 ode2= diff(y,t)==y*(2+y)*(2-y); cond2= y(0)==5;
 ysolv2(t)=dsolve(ode2,cond2);
+sol2=matlabFunction(ysolv2);
 f2=@(t,y)(y.*(2+y).*(2-y)); 
 % figure
 % fplot(ysolv2,[0 2])

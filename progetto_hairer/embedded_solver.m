@@ -1,65 +1,74 @@
-function [y_high, y_low, k_next, err] = embedded_solver(fun, x, y, h, k1, atol, rtol)
-% EMBEDDED_SOLVER Performs a single step of an embedded 4(3) RK method.
+function [y_high, y_low, k_next, err] = embedded_solver(fun, x, y, h, k1, atol, rtol, tableau)
+% EMBEDDED_SOLVER Performs a single step of a generic embedded RK method.
 %
 % Syntax:
-%   [y_high, y_low, k_next, err] = embedded_solver(fun, x, y, h, k1, atol, rtol)
+%   [y_high, y_low, k_next, err] = embedded_solver(fun, x, y, h, k1, atol, rtol, tableau)
 %
 % Description:
-%   Implements a single step of a 4(3) Runge-Kutta method with FSAL
-%   (First Same As Last). The higher-order method is the classic "3/8 Rule"
-%   of order 4. The embedded method of order 3 is derived from formula (4.9)
-%   in Hairer & Nörsett.
+%   Implements a single step of an embedded Runge-Kutta method, which can
+%   be specified via the 'tableau' parameter. It supports FSAL (First Same
+%   As Last) functionality if the method has that property.
 %
 % Input:
-%   fun  - Handle to the ODE function, e.g., @brusselator.
-%   x    - Current time.
-%   y    - Current value vector.
-%   h    - Step size.
-%   k1   - The result of the first function evaluation (from the previous step
-%          due to FSAL). Can be empty [] for the very first step.
-%   atol - Absolute tolerance for error calculation.
-%   rtol - Relative tolerance for error calculation.
+%   fun     - Handle to the ODE function.
+%   x       - Current time.
+%   y       - Current value vector.
+%   h       - Step size.
+%   k1      - The result of the first function evaluation (from a previous
+%             step for FSAL methods). Can be empty [].
+%   atol    - Absolute tolerance.
+%   rtol    - Relative tolerance.
+%   tableau - Struct containing the Butcher tableau for the method. It must
+%             contain fields A, c, b, and b_hat.
 %
 % Output:
-%   y_high - 4th order solution at time x + h.
-%   y_low  - 3rd order solution (for error estimation) at time x + h.
-%   k_next - The function evaluation at (x+h, y_high), to be used as k1 in
-%            the next step (FSAL).
-%   err    - The estimated local error for this step.
+%   y_high - Higher-order solution at time x + h.
+%   y_low  - Lower-order solution at time x + h.
+%   k_next - Function evaluation at (x+h, y_high), for FSAL.
+%   err    - Estimated local error.
 
-    % Butcher Tableau for the 3/8 rule (Order 4)
-    c = [0, 1/3, 2/3, 1];
-    A = [0, 0, 0, 0;
-         1/3, 0, 0, 0;
-         -1/3, 1, 0, 0;
-         1, -1, 1, 0];
-    b = [1/8, 3/8, 3/8, 1/8];
-
-    % Coefficients for the embedded method (Order 3), from formula (4.9)
-    % b_hat = [1/12, 1/2, 1/4, 0, 1/6]
-    b_hat = [1/12, 1/2, 1/4, 0]; % Last one is for k5
+    A = tableau.A;
+    c = tableau.c;
+    b = tableau.b;
+    b_hat = tableau.b_hat;
+    
+    s = size(A, 1);
+    k = zeros(length(y), s);
 
     % --- Stage computations ---
     if isempty(k1)
-        k1 = fun(x, y);
+        k(:, 1) = fun(x, y);
+    else
+        k(:, 1) = k1;
     end
     
-    k2 = fun(x + c(2)*h, y + h*(A(2,1)*k1));
-    k3 = fun(x + c(3)*h, y + h*(A(3,1)*k1 + A(3,2)*k2));
-    k4 = fun(x + c(4)*h, y + h*(A(4,1)*k1 + A(4,2)*k2 + A(4,3)*k3));
+    for i = 2:s
+        y_stage = y;
+        for j = 1:i-1
+            y_stage = y_stage + h * A(i,j) * k(:,j);
+        end
+        k(:, i) = fun(x + c(i)*h, y_stage);
+    end
 
     % --- Compute solutions ---
-    % Higher-order solution (y1 in book)
-    y_high = y + h * (b(1)*k1 + b(2)*k2 + b(3)*k3 + b(4)*k4);
+    y_high = y;
+    for i = 1:length(b)
+        y_high = y_high + h * b(i) * k(:,i);
+    end
     
-    % FSAL stage: k5 is the evaluation for the next step
+    % FSAL stage (if applicable)
     k_next = fun(x + h, y_high);
     
-    % Lower-order solution (y_hat in book)
-    y_low = y + h * (b_hat(1)*k1 + b_hat(2)*k2 + b_hat(3)*k3 + b_hat(4)*k4 + (1/6)*k_next);
+    y_low = y;
+    for i = 1:length(b_hat)
+        if i <= s
+            y_low = y_low + h * b_hat(i) * k(:,i);
+        else % This handles the FSAL part where b_hat has an extra element
+            y_low = y_low + h * b_hat(i) * k_next;
+        end
+    end
     
     % --- Error estimation ---
-    % The error is estimated using the norm of the difference
     err = err_norm(y_high, y_low, y, atol, rtol);
     
 end
