@@ -160,7 +160,6 @@ for j = 1:length(functions)
         plot(t_embedded, y_embedded(2,:), 'c-', 'LineWidth', 1.5, 'DisplayName', 'y2 (Embedded)');
     end
     if ~isempty(sol)
-        %fplot(sol, t_span, 'r--', 'DisplayName', 'Soluzione Esatta');
         % 1. Crea un vettore di tempi ad alta risoluzione
         t_fine = linspace(t_span(1), t_span(end), 1000);
         
