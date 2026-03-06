@@ -26,9 +26,9 @@ rtol = 1e-4;
 p_embedded = 4; % Ordine del metodo embedded (4(3))
 
 
-labels={'brusselator',func2str(f1),func2str(f2)};
+labels={'brusselator','y''=3+cos(t)-y','y''=y(2+y)(2-y)'};
 for j=1:3
-    fprintf('--- Calcolo in corso per la funzione: %s ---\n', labels{j});
+    fprintf('--- Calcolo in corso per l''ODE: %s ---\n', labels{j})
     fun=functions{j};
     t_span = [0, T(j)];
     x0 = t_span(1);
