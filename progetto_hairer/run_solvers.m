@@ -24,12 +24,16 @@ y0s = {[1.5; 3], 1, 5};
 labels = {'Brusselator', 'y''=3+cos(t)-y', 'y''=y(2+y)(2-y)'};
 
 % Parametri comuni per il controllo del passo
-atol = 1e-5;
-rtol = 1e-5;
+atol = 1e-4;
+rtol = 1e-4;
 fac = 0.8;
 facmin = 0.1;
 facmax = 5.0;
-max_steps = 10000;
+max_steps = 5000;
+
+
+% Per semplicità, usiamo un numero fisso di passi per i solutori non adattivi
+n_steps_fixed = 200;
 
 for j = 1:length(functions)
     fprintf('--- Calcolo in corso per l''ODE: %s ---\n', labels{j})
@@ -38,19 +42,34 @@ for j = 1:length(functions)
     t_span = [0, T(j)];
     x0 = t_span(1);
     y0 = y0s{j};
+    H_fixed = (t_span(2) - t_span(1)) / n_steps_fixed;
 
+    fprintf('Esecuzione Richardson Solver...\n');
+    y_richardson = zeros(2, n_steps_fixed + 1);
+    y_richardson(:, 1) = y0;
+    t_richardson = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
+    for i = 1:n_steps_fixed
+        y_richardson(:, i+1) = richardson_solver(fun, t_richardson(i), y_richardson(:, i), H_fixed);
+    end
+
+    % --- Gauss-Legendre Solver (Fixed Step) ---
+    fprintf('Esecuzione Gauss-Legendre Solver...\n');
+    y_gauss = zeros(2, n_steps_fixed + 1);
+    y_gauss(:, 1) = y0;
+    t_gauss = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
+    for i = 1:n_steps_fixed
+        y_gauss(:, i+1) = gauss_legendre_solver(fun, t_gauss(i), y_gauss(:, i), H_fixed);
+    end
     % Calcolo del passo iniziale
-    p_richardson = 2; % Ordine per Richardson
-    h0 = initial_step_selector(fun, x0, y0, p_richardson, atol, rtol);
+    p_embedded = tableau.p; 
+    h0 = initial_step_selector(fun, x0, y0, p_embedded, atol, rtol);
     fprintf('Passo iniziale suggerito: h = %.6f\n', h0);
 
     % Se non è disponibile una soluzione analitica, calcolane una di riferimento
     if isempty(sol)
-        fprintf('Calcolo della soluzione di riferimento ad alta precisione con ode15s...\n');
         options = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);
         sol_struct = ode15s(fun, t_span, y0, options);
         sol = @(t) deval(sol_struct, t);
-        fprintf('Soluzione di riferimento calcolata.\n');
     end
 
     % --- Embedded Solver (Adaptive Step) ---
