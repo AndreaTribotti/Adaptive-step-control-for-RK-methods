@@ -31,6 +31,7 @@ methods(1).b = [1/8, 3/8, 3/8, 1/8];
 methods(1).b_hat = [1/12, 1/2, 1/4, 0, 1/6]; % Note: Last coefficient is for k_next (FSAL)
 methods(1).p = 4;
 methods(1).q = 3;
+methods(1).fsal = true;
 
 % Method 2: Bogacki-Shampine 3(2)
 methods(2).name = 'BS3(2)';
@@ -43,6 +44,7 @@ methods(2).b = [2/9, 1/3, 4/9, 0];
 methods(2).b_hat = [7/24, 1/4, 1/3, 1/8];
 methods(2).p = 3;
 methods(2).q = 2;
+methods(2).fsal = true;
 
 % Method 3: Dormand-Prince 5(4) - This is the method used in MATLAB's ode45
 methods(3).name = 'DP5(4)';
@@ -58,3 +60,4 @@ methods(3).b = [35/384, 0, 500/1113, 125/192, -2187/6784, 11/84, 0];
 methods(3).b_hat = [5179/57600, 0, 7571/16695, 393/640, -92097/339200, 187/2100, 1/40];
 methods(3).p = 5;
 methods(3).q = 4;
+methods(3).fsal = true;
