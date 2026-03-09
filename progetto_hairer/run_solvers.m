@@ -51,15 +51,32 @@ for j = 1:length(functions)
     for i = 1:n_steps_fixed
         y_richardson(:, i+1) = richardson_solver(fun, t_richardson(i), y_richardson(:, i), H_fixed);
     end
+    FE_richardson= 12*n_steps_fixed;
 
-    % --- Gauss-Legendre Solver (Fixed Step) ---
-    fprintf('Esecuzione Gauss-Legendre Solver...\n');
-    y_gauss = zeros(2, n_steps_fixed + 1);
-    y_gauss(:, 1) = y0;
-    t_gauss = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
-    for i = 1:n_steps_fixed
-        y_gauss(:, i+1) = gauss_legendre_solver(fun, t_gauss(i), y_gauss(:, i), H_fixed);
-    end
+    % --- ERK3 ---
+    fprintf('Esecuzione ERK3...\n');
+    b3=[1/4,0,3/4]; c3=[0,1/3,2/3]; 
+    A3=[0 0
+       1/3 0
+       0 2/3];
+    [t3,u3,FE_erk3] = ERK3(fun,t_span,y0,H_fixed,b3,c3,A3);
+
+
+    % --- ERK4 ---
+    fprintf('Esecuzione ERK4');
+    b4=[1/8,3/8,3/8,1/8]; c4=[0,1/3,2/3,1]; 
+    A4=[0 0 0
+       1/3 0 0 
+       -1/3 1 0 
+       1 -1 1];
+    [t4,u4,FE_erk4] = ERK4(fun,t_span,y0,H_fixed,b4,c4,A4);
+
+
+ 
+
+
+    
+
     % Calcolo del passo iniziale
     p_embedded = tableau.p; 
     h0 = initial_step_selector(fun, x0, y0, p_embedded, atol, rtol);
