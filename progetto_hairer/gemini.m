@@ -51,32 +51,15 @@ for j = 1:length(functions)
     for i = 1:n_steps_fixed
         y_richardson(:, i+1) = richardson_solver(fun, t_richardson(i), y_richardson(:, i), H_fixed);
     end
-    FE_richardson= 12*n_steps_fixed;
 
-    % --- ERK3 ---
-    fprintf('Esecuzione ERK3...\n');
-    b3=[1/4,0,3/4]; c3=[0,1/3,2/3]; 
-    A3=[0 0
-       1/3 0
-       0 2/3];
-    [t3,u3,FE_erk3] = ERK3(fun,t_span,y0,H_fixed,b3,c3,A3);
-
-
-    % --- ERK4 ---
-    fprintf('Esecuzione ERK4');
-    b4=[1/8,3/8,3/8,1/8]; c4=[0,1/3,2/3,1]; 
-    A4=[0 0 0
-       1/3 0 0 
-       -1/3 1 0 
-       1 -1 1];
-    [t4,u4,FE_erk4] = ERK4(fun,t_span,y0,H_fixed,b4,c4,A4);
-
-
- 
-
-
-    
-
+    % --- Gauss-Legendre Solver (Fixed Step) ---
+    fprintf('Esecuzione Gauss-Legendre Solver...\n');
+    y_gauss = zeros(2, n_steps_fixed + 1);
+    y_gauss(:, 1) = y0;
+    t_gauss = linspace(t_span(1), t_span(2), n_steps_fixed + 1);
+    for i = 1:n_steps_fixed
+        y_gauss(:, i+1) = gauss_legendre_solver(fun, t_gauss(i), y_gauss(:, i), H_fixed);
+    end
     % Calcolo del passo iniziale
     p_embedded = tableau.p; 
     h0 = initial_step_selector(fun, x0, y0, p_embedded, atol, rtol);
@@ -214,4 +197,153 @@ for j = 1:length(functions)
     ylabel('Valore y');
     legend('show', 'Location', 'best');
     hold off;
+end
+
+%% --- CODICE PER LA RIGENERAZIONE DELLA FIGURA 4.2 DI HAIRER ---
+fprintf('\n--- Inizio della rigenerazione della Figura 4.2 di Hairer ---\n');
+
+% --- Setup del problema e della soluzione di riferimento ---
+fun_brusselator = @brusselator;
+t_span_brusselator = [0, 20];
+y0_brusselator = [1.5; 3];
+
+fprintf('Calcolo della soluzione di riferimento ad alta precisione...\n');
+options_ref = odeset('RelTol', 1e-14, 'AbsTol', 1e-14);
+sol_struct_ref = ode15s(fun_brusselator, t_span_brusselator, y0_brusselator, options_ref);
+y_ref_end = deval(sol_struct_ref, t_span_brusselator(2));
+
+% --- Parametri per i cicli ---
+tols = logspace(-2, -10, 9);
+n_solvers = 3;
+work = cell(n_solvers, 1);
+precision = cell(n_solvers, 1);
+solver_names = {'Embedded Solver', 'Richardson Extrapolation', 'Gauss-Legendre (fixed step)'};
+max_steps_fig = 1e6;
+
+% --- Wrapper per il conteggio delle chiamate alla funzione ---
+global nfe_counter;
+f_wrapped = @(t,y) f_eval_wrapper(fun_brusselator, t, y);
+
+% --- 1. Embedded Solver (Adattivo) ---
+fprintf('Avvio calcoli per: %s\n', solver_names{1});
+work{1} = zeros(size(tols));
+precision{1} = zeros(size(tols));
+for i = 1:length(tols)
+    atol_current = tols(i);
+    rtol_current = tols(i);
+    nfe_counter = 0;
+    
+    t_current = t_span_brusselator(1);
+    y_current = y0_brusselator;
+    h = initial_step_selector(f_wrapped, t_current, y_current, tableau.p, atol_current, rtol_current);
+    k1 = [];
+    
+    steps = 0;
+    while t_current < t_span_brusselator(2) && steps < max_steps_fig
+        if t_current + h > t_span_brusselator(2), h = t_span_brusselator(2) - t_current; end
+        
+        [y_high, ~, k_next, err] = embedded_solver(f_wrapped, t_current, y_current, h, k1, atol_current, rtol_current, tableau);
+        
+        if err < 1
+            t_current = t_current + h;
+            y_current = y_high;
+            k1 = k_next; % FSAL
+        end
+        h = step_control(h, err, tableau.q, fac, facmin, facmax);
+        steps = steps + 1;
+    end
+    work{1}(i) = nfe_counter;
+    precision{1}(i) = norm(y_current - y_ref_end);
+    fprintf('Tol: %.E, Work: %d, Precision: %.E\n', atol_current, work{1}(i), precision{1}(i));
+end
+
+% --- 2. Richardson Extrapolation (Adattivo) ---
+fprintf('Avvio calcoli per: %s\n', solver_names{2});
+work{2} = zeros(size(tols));
+precision{2} = zeros(size(tols));
+p_richardson = 4; % Ordine del metodo base (RK4)
+q_richardson = 4; % Ordine dell'errore (p)
+for i = 1:length(tols)
+    atol_current = tols(i);
+    rtol_current = tols(i);
+    nfe_counter = 0;
+    
+    t_current = t_span_brusselator(1);
+    y_current = y0_brusselator;
+    h = initial_step_selector(fun_brusselator, t_current, y_current, p_richardson, atol_current, rtol_current);
+
+    steps = 0;
+    while t_current < t_span_brusselator(2) && steps < max_steps_fig
+        if t_current + h > t_span_brusselator(2), h = t_span_brusselator(2) - t_current; end
+
+        % Il solver richardson non è stato scritto per ritornare l'errore,
+        % quindi lo calcoliamo qui basandoci sui suoi risultati.
+        [y_extrap, y_coarse] = richardson_solver(fun_brusselator, t_current, y_current, h);
+        nfe_counter = nfe_counter + 12; % 3 chiamate a RK4 che ha 4 stadi = 12 eval
+        
+        err_est = norm(y_extrap - y_coarse);
+        sc = atol_current + rtol_current * max(norm(y_current), norm(y_coarse));
+        err = err_est / sc;
+
+        if err < 1
+            t_current = t_current + h;
+            y_current = y_extrap; % Avanziamo con la soluzione migliore
+        end
+        h = step_control(h, err, q_richardson, fac, facmin, facmax);
+        steps = steps + 1;
+    end
+    work{2}(i) = nfe_counter;
+    precision{2}(i) = norm(y_current - y_ref_end);
+    fprintf('Tol: %.E, Work: %d, Precision: %.E\n', atol_current, work{2}(i), precision{2}(i));
+end
+
+% --- 3. Gauss-Legendre (Passo Fisso) ---
+fprintf('Avvio calcoli per: %s\n', solver_names{3});
+n_steps_array = round(logspace(2.5, 4.5, 9));
+work{3} = zeros(size(n_steps_array));
+precision{3} = zeros(size(n_steps_array));
+for i = 1:length(n_steps_array)
+    n_steps = n_steps_array(i);
+    h = (t_span_brusselator(2) - t_span_brusselator(1)) / n_steps;
+    nfe_counter = 0;
+    
+    y_current = y0_brusselator;
+    for step = 1:n_steps
+        y_current = gauss_legendre_solver(f_wrapped, 0, y_current, h);
+    end
+    
+    work{3}(i) = nfe_counter;
+    precision{3}(i) = norm(y_current - y_ref_end);
+    fprintf('Steps: %d, Work: %d, Precision: %.E\n', n_steps, work{3}(i), precision{3}(i));
+end
+
+
+% --- Plotting del diagramma Work-Precision ---
+figure;
+hold on;
+colors = {'r', 'b', 'k'};
+markers = {'-o', '--s', ':d'};
+
+for i = 1:n_solvers
+    % Rimuoviamo eventuali punti con precisione zero che causano problemi nel log plot
+    valid_points = precision{i} > 0;
+    if any(valid_points)
+        loglog(precision{i}(valid_points), work{i}(valid_points), markers{i}, 'Color', colors{i}, 'DisplayName', solver_names{i}, 'LineWidth', 1.5);
+    end
+end
+
+title('Work-Precision Diagram (Brusselator Problem)');
+xlabel('Global Error at t=20');
+ylabel('Number of Function Evaluations');
+legend('show', 'Location', 'SouthWest');
+grid on;
+set(gca, 'XDir', 'reverse'); % L'errore diminuisce verso destra
+xlim([1e-11, 1e-1]);
+hold off;
+
+
+function dy = f_eval_wrapper(fun, t, y)
+    global nfe_counter;
+    dy = fun(t, y);
+    nfe_counter = nfe_counter + 1;
 end
