@@ -14,7 +14,7 @@
 
 % --- Method Selection ---
 % Change this value to select the default RK method to be used.
-default_method = 'BS3(2)'; 
+default_method = 'ERK4(3)'; 
 
 % --- Butcher Tableaux Definitions ---
 
