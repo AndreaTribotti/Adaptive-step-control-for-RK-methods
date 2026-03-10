@@ -1,59 +1,59 @@
 % =========================================================================
 % run_full_comparison.m
 %
-% Questo script esegue un confronto tra diversi metodi Runge-Kutta,
-% includendo sia metodi con passo adattivo che metodi con passo fisso.
+% This script performs a comparison between different Runge-Kutta methods,
+% including both adaptive-step and fixed-step methods.
 %
-% L'obiettivo è generare un grafico di efficienza (work-precision diagram)
-% che plotti l'errore globale rispetto al numero di valutazioni di funzione.
+% The objective is to generate an efficiency graph (work-precision diagram)
+% that plots the global error against the number of function evaluations.
 %
-% Metodi Adattivi (basati su embedded_solver.m):
+% Adaptive Methods (based on embedded_solver.m):
 % 1. BS3(2) - Bogacki-Shampine 3(2)
-% 2. ERK4(3) - Coppia custom 4(3)
+% 2. ERK4(3) - Custom 4(3) pair
 % 3. DP5(4) - Dormand-Prince 5(4)
 %
-% Metodi a Passo Fisso:
-% 4. Richardson Extrapolation (basato su RK4)
-% 5. ERK3 (implementazione a passo fisso)
-% 6. ERK4 (implementazione a passo fisso)
+% Fixed-Step Methods:
+% 4. Richardson Extrapolation (based on RK4)
+% 5. ERK3 (fixed-step implementation)
+% 6. ERK4 (fixed-step implementation)
 % =========================================================================
 
 clear; close all; clc;
 
-% --- Impostazioni del Problema e dei Solutori ---
+% --- Problem and Solver Settings ---
 
-fprintf('Setup del problema...\n');
-butcher_matrices; % Carica le matrici di Butcher
+fprintf('Problem setup...\n');
+butcher_matrices; % Load Butcher matrices
 
-% Dati del problema
+% Problem data
 fun = @brusselator;
 t_span = [0, 20];
 y0 = [1.5; 3];
 
-% --- Calcolo della Soluzione di Riferimento ---
-fprintf('Calcolo della soluzione di riferimento con ode45...\n');
+% --- Calculation of the Reference Solution ---
+fprintf('Calculating reference solution with ode45...\n');
 opts = odeset('RelTol', 1e-12, 'AbsTol', 1e-14);
 sol_ref = ode45(fun, t_span, y0, opts);
 y_ref_final = deval(sol_ref, t_span(2));
-fprintf('Soluzione di riferimento calcolata.\n');
+fprintf('Reference solution calculated.\n');
 
-% Struttura per memorizzare i risultati
+% Structure to store results
 results = struct();
 
-% --- Parte 1: Test dei Metodi Adattivi ---
-fprintf('--- Inizio Test Metodi Adattivi ---\n');
+% --- Part 1: Testing Adaptive Methods ---
+fprintf('--- Starting Adaptive Methods Test ---\n');
 
 methods_adaptive = {'BS3(2)', 'ERK4(3)', 'DP5(4)'};
 tols = 10.^(-4:-1:-10);
 
 for i = 1:length(methods_adaptive)
     method_name = methods_adaptive{i};
-    fprintf('Testing metodo adattivo: %s\n', method_name);
+    fprintf('Testing adaptive method: %s\n', method_name);
     
     global_errors = zeros(1, length(tols));
     function_evals = zeros(1, length(tols));
     
-    % Trova il tableau corretto
+    % Find the correct tableau
     idx = find(strcmp({methods.name}, method_name));
     tableau = methods(idx);
 
@@ -70,10 +70,10 @@ for i = 1:length(methods_adaptive)
 end
 
 
-% --- Parte 2: Test dei Metodi a Passo Fisso ---
-fprintf('--- Inizio Test Metodi a Passo Fisso ---\n');
+% --- Part 2: Testing Fixed-Step Methods ---
+fprintf('--- Starting Fixed-Step Methods Test ---\n');
 
-% Per ERK3 e ERK4, abbiamo bisogno delle loro matrici (senza parte embedded)
+% For ERK3 and ERK4, we need their matrices (without the embedded part)
 erk3_idx = find(strcmp({methods.name}, 'BS3(2)'));
 erk3_b = methods(erk3_idx).b;
 erk3_c = methods(erk3_idx).c;
@@ -89,7 +89,7 @@ step_counts = [100, 200, 500, 750, 1000, 1250, 1500];
 
 for i = 1:length(methods_fixed)
     method_name = methods_fixed{i};
-    fprintf('Testing metodo a passo fisso: %s\n', method_name);
+    fprintf('Testing fixed-step method: %s\n', method_name);
 
     global_errors = zeros(1, length(step_counts));
     function_evals = zeros(1, length(step_counts));
@@ -131,13 +131,13 @@ for i = 1:length(methods_fixed)
 end
 
 
-% --- Parte 3: Generazione del Grafico ---
+% --- Part 3: Plot Generation ---
 figure;
 hold on;
 grid on;
 
 method_names_plot = [methods_adaptive, methods_fixed];
-colors = lines(length(method_names_plot)); % Genera colori distinti
+colors = lines(length(method_names_plot)); % Generate distinct colors
 
 for i = 1:length(method_names_plot)
     method_name = method_names_plot{i};
@@ -148,44 +148,44 @@ for i = 1:length(method_names_plot)
     
     if any(valid_indices)
         if strcmp(res.type, 'adaptive')
-            % Plotta adattivi con linea e marker
+            % Plot adaptive with line
             loglog(res.errors(valid_indices), res.fevals(valid_indices), ...
                    '-', 'DisplayName', method_name, 'LineWidth', 1.5, 'Color', colors(i,:));
         else
-            % Plotta fissi solo con marker
+            % Plot fixed with dashed line
             loglog(res.errors(valid_indices), res.fevals(valid_indices), ...
-                   '--', 'DisplayName', [method_name, ' (fisso)'], 'MarkerSize', 8, 'LineWidth', 1.5, 'Color', colors(i,:));
+                   '--', 'DisplayName', [method_name, ' (fixed)'], 'MarkerSize', 8, 'LineWidth', 1.5, 'Color', colors(i,:));
         end
     end
 end
 
-% Impostazioni del grafico
-title('Confronto di Efficienza Metodi Adattivi vs. Passo Fisso');
-xlabel('Errore Globale');
-ylabel('Numero di Valutazioni di Funzione');
+% Plot settings
+title('Efficiency Comparison: Adaptive vs. Fixed-Step Methods');
+xlabel('Global Error');
+ylabel('Number of Function Evaluations');
 legend('show', 'Location', 'northwest');
 set(gca, 'XScale', 'log', 'YScale', 'log');
 set(gca, 'XDir', 'reverse');
 
 % =========================================================================
-% FUNZIONI LOCALI DEI SOLUTORI (riutilizzate da prima)
+% LOCAL SOLVER FUNCTIONS (reused from before)
 % =========================================================================
 
 function [y_final, total_fevals] = solve_adaptive_embedded(fun, t_span, y0, rtol, atol, tableau)
-    % Parametri di controllo del passo
+    % Step size control parameters
     fac = 0.8; facmin = 0.1; facmax = 5.0; max_steps = 50000;
 
-    % Inizializzazione
+    % Initialization
     t_start = t_span(1); t_end = t_span(2);
     t_current = t_start; y_current = y0;
     
-    % Selettore del passo iniziale
+    % Initial step selector
     p = tableau.p;
     h = initial_step_selector(fun, t_current, y_current, p, atol, rtol);
-    total_fevals = 2; % initial_step_selector fa 2 valutazioni
+    total_fevals = 2; % initial_step_selector makes 2 evaluations
 
-    k1_fsal = []; % k1 per il primo passo (vuoto)
-    step_accepted = false; % Flag per tracciare se il passo precedente è stato accettato
+    k1_fsal = []; % k1 for the first step (empty)
+    step_accepted = false; % Flag to track if the previous step was accepted
     
     num_stages = length(tableau.c);
     is_fsal = isfield(tableau, 'fsal') && tableau.fsal;
@@ -193,37 +193,37 @@ function [y_final, total_fevals] = solve_adaptive_embedded(fun, t_span, y0, rtol
     while t_current < t_end
         if t_current + h > t_end, h = t_end - t_current; end
 
-        % Per un metodo FSAL, k1 è riutilizzato solo se il passo precedente è stato accettato
+        % For an FSAL method, k1 is reused only if the previous step was accepted
         if is_fsal && step_accepted
             k1_to_pass = k1_fsal;
-            evals_this_step = num_stages - 1; % Si risparmia una valutazione
+            evals_this_step = num_stages - 1; % One evaluation is saved
         else
             k1_to_pass = [];
-            evals_this_step = num_stages; % Si eseguono tutte le valutazioni
+            evals_this_step = num_stages; % All evaluations are performed
         end
         
-        % Esegui un passo e calcola k_next (che costa 1 valutazione extra)
+        % Perform one step and calculate k_next (which costs 1 extra evaluation)
         [y_high, ~, k_next, err] = embedded_solver(fun, t_current, y_current, h, k1_to_pass, atol, rtol, tableau);
-        evals_this_step = evals_this_step + 1; % Aggiungi la valutazione per k_next
+        evals_this_step = evals_this_step + 1; % Add the evaluation for k_next
 
         if err < 1
-            % Passo accettato
+            % Step accepted
             t_current = t_current + h;
             y_current = y_high;
             if is_fsal
-                k1_fsal = k_next; % Salva k_next per il prossimo passo
+                k1_fsal = k_next; % Save k_next for the next step
             end
             step_accepted = true;
             facmax_current = facmax;
         else
-            % Passo rifiutato
+            % Step rejected
             step_accepted = false;
             facmax_current = 1.0;
         end
         
         total_fevals = total_fevals + evals_this_step;
         
-        % Adatta il passo per il prossimo tentativo
+        % Adjust the step for the next attempt
         if t_current < t_end
             h = step_control(h, err, tableau.q, fac, facmin, facmax_current);
         end
