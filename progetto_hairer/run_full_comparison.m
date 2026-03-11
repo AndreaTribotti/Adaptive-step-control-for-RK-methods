@@ -74,10 +74,10 @@ end
 fprintf('--- Starting Fixed-Step Methods Test ---\n');
 
 % For ERK3 and ERK4, we need their matrices (without the embedded part)
-erk3_idx = find(strcmp({methods.name}, 'BS3(2)'));
-erk3_b = methods(erk3_idx).b;
-erk3_c = methods(erk3_idx).c;
-erk3_A = methods(erk3_idx).A;
+b3=[1/4,0,3/4]; c3=[0,1/3,2/3]; 
+A3=[0 0
+   1/3 0
+   0 2/3];
 
 erk4_idx = find(strcmp({methods.name}, 'ERK4(3)'));
 erk4_b = methods(erk4_idx).b;
@@ -111,7 +111,7 @@ for i = 1:length(methods_fixed)
                 fevals = 12 * n_steps; % 8 (fine) + 4 (coarse)
                 
             case 'ERK3'
-                [~, u, fevals_erk] = ERK3(fun, t_span, y0, h, erk3_b, erk3_c, erk3_A);
+                [~, u, fevals_erk] = ERK3(fun, t_span, y0, h, b3, c3, A3);
                 y_final = u(:, end);
                 fevals = fevals_erk;
 
