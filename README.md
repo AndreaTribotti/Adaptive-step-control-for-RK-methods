@@ -23,7 +23,7 @@ The methods are tested on:
 - the **Brusselator system**
 - two scalar ODE test problems.
 
-#### Run the script
+#### How to run
 
 To run a predefined experiment with fixed parameters:
 
