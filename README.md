@@ -1,29 +1,95 @@
-# Analisi e Implementazione di Metodi Runge-Kutta Adattivi
+# Adaptive Step Control for Runge–Kutta Methods
 
-Questo progetto Matlab implementa le tecniche di controllo del passo e stima dell'errore descritte nel testo di Hairer & Nörsett, "Solving Ordinary Differential Equations I". Il focus è sulla precisione computazionale e sull'efficienza del solutore attraverso l'adattività del passo.
+This project studies **adaptive step-size control strategies for explicit Runge–Kutta (ERK) methods** applied to the numerical solution of **initial value problems (IVPs)** for ordinary differential equations.
 
-## Funzionalità Implementate
+The work was developed for the **Numerical Methods course** at the **University of Bologna**.
 
-### 1. Tecniche di Stima dell'Errore
-* **Richardson Extrapolation**: Confronto tra due passi di ampiezza $h$ e un passo grande $2h$ per stimare l'errore e aumentare l'ordine di precisione.
-* **Embedded Runge-Kutta**: Implementazione di coppie di metodi (es. 3(2) e 4(3) FSAL) che condividono i valori della funzione per ridurre il costo computazionale.
-* **Metodi Impliciti di Gauss-Legendre**: Implementazione di solutori impliciti (punto medio e ordine 4) per una stabilità superiore su problemi rigidi (stiff).
+---
 
-### 2. Controllo Adattivo del Passo
-* **Algoritmo di Gladwell**: Calcolo automatico del passo iniziale $h$ basato sulla norma della soluzione e delle sue derivate.
-* **Logica di Accettazione/Rifiuto**: Regolazione del passo basata sulle tolleranze `Atol` e `Rtol` fornite dall'utente.
-* **Local Extrapolation**: Il solutore avanza sempre utilizzando l'approssimazione di ordine superiore per garantire la massima precisione.
+## Project Overview
 
-### 3. Interfaccia Grafica (App Designer)
-Un'applicazione interattiva che permette di:
-* Selezionare il sistema ODE (es. Brusselator).
-* Configurare i parametri di tolleranza.
-* Visualizzare graficamente i passi accettati, quelli rigettati e l'andamento dell'errore.
+The project is divided into two phases.
 
-## Requisiti
-* MATLAB (R2021a o superiore)
-* Control System Toolbox (opzionale per analisi di stabilità)
+### Phase 1 – Adaptive Embedded Runge–Kutta Methods
 
-## Esercizi Risolti
-* **Esercizio 1**: Interpretazione del metodo di Runge come estrapolazione di Richardson.
-* **Esercizio 3**: Verifica dell'invarianza della strategia di controllo rispetto al riscalamento della variabile indipendente.
+We implement and test three embedded Runge–Kutta pairs with adaptive step control:
+
+- **BS3(2)** – Bogacki–Shampine method  
+- **ERK4(3)** – Embedded fourth/third-order Runge–Kutta  
+- **DP5(4)** – Dormand–Prince method  
+
+The methods are tested on:
+
+- the **Brusselator system**
+- two scalar ODE test problems.
+
+#### Run the script
+
+To run a predefined experiment with fixed parameters:
+
+```matlab
+run_solver.m
+```
+
+This script runs the solvers and prints the results for a fixed configuration.
+
+#### Interactive exploration
+
+To explore the parameters interactively, open the MATLAB app:
+
+```matlab
+adaptive_steps_app.mlapp
+```
+
+The app allows the user to:
+
+- select the ODE problem
+- choose the Runge–Kutta method
+- set absolute and relative tolerances
+- modify the safety factor
+
+It also visualizes the solution and the step-size evolution.
+
+---
+
+### Phase 2 – Work–Precision Comparison
+
+In the second phase we compare **adaptive and fixed-step methods** on the **Brusselator system**.
+
+Adaptive methods:
+
+- BS3(2)
+- ERK4(3)
+- DP5(4)
+
+Fixed-step methods:
+
+- ERK3
+- ERK4
+- ERK4 with Richardson extrapolation
+
+The comparison evaluates **global error vs number of function evaluations** using a work–precision diagram.
+
+#### Run the comparison
+
+```matlab
+run_full_comparison.m
+```
+
+This script generates the work–precision plot used to compare the methods.
+
+---
+
+## Requirements
+
+- MATLAB (with support for `.mlapp` apps)
+
+---
+
+## Authors
+
+Andrea Tribotti  
+Leonardo Cittadini  
+Werther Solazzi  
+
+University of Bologna – Numerical Methods
