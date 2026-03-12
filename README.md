@@ -48,7 +48,7 @@ The app allows the user to:
 - set absolute and relative tolerances
 - modify the safety factor
 
-It also visualizes the solution and the step-size evolution.
+It visualizes the solution, the step-size evolution and the errors behaviour.
 
 ---
 
