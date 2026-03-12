@@ -91,7 +91,7 @@ This script generates the work–precision plot used to compare the methods.
 The adaptive step-size control strategy implemented in this project follows the framework described in:
 
 E. Hairer, S. P. Nørsett, G. Wanner,  
-[*Solving Ordinary Differential Equations I: Nonstiff Problems*](https://huggingface.co/distilbert/distilbert-base-uncased),  
+[*Solving Ordinary Differential Equations I: Nonstiff Problems*,](https://github.com/AndreaTribotti/Adaptive-step-control-for-RK-methods/blob/main/Hairer_Norsett_Step_Control.pdf)  
 Springer Series in Computational Mathematics.
 
 ---
