@@ -86,10 +86,19 @@ This script generates the work–precision plot used to compare the methods.
 
 ---
 
+## References
+
+The adaptive step-size control strategy implemented in this project follows the framework described in:
+
+E. Hairer, S. P. Nørsett, G. Wanner,  
+*Solving Ordinary Differential Equations I: Nonstiff Problems*,  
+Springer Series in Computational Mathematics.
+
+---
+
 ## Authors
 
 Andrea Tribotti  
 Leonardo Cittadini  
 Werther Solazzi  
 
-University of Bologna – Numerical Methods
