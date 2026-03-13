@@ -91,7 +91,7 @@ To complement the global trends, a comparison table provides a **detailed perfor
 run_full_comparison.m
 ```
 
-This script generates the work–precision plot used to compare the methods.
+This script generates the work–precision plot and the table used to compare the methods.
 
 ---
 
