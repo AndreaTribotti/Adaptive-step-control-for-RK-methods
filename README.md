@@ -68,7 +68,22 @@ Fixed-step methods:
 - ERK4
 - ERK4 with Richardson extrapolation
 
-The comparison evaluates **global error vs number of function evaluations** using a work–precision diagram.
+### Phase 2 – Work–Precision Comparison
+
+In the second phase, we compare **adaptive** and **fixed-step methods** on the **Brusselator system**.
+
+**Adaptive methods:**
+- BS3(2)
+- ERK4(3)
+- DP5(4)
+
+**Fixed-step methods:**
+- ERK3
+- ERK4
+- ERK4 with Richardson extrapolation
+
+The performance comparison is based on a **work–precision diagram**, where **global error** is evaluated against the **number of function evaluations**.
+To complement the global trends, a comparison table provides a **detailed performance snapshot for one representative configuration**.
 
 #### Run the comparison
 
