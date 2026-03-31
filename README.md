@@ -52,21 +52,6 @@ It visualizes the solution, the step-size evolution and the errors behaviour.
 
 ---
 
-### Phase 2 – Work–Precision Comparison
-
-In the second phase we compare **adaptive and fixed-step methods** on the **Brusselator system**.
-
-Adaptive methods:
-
-- BS3(2)
-- ERK4(3)
-- DP5(4)
-
-Fixed-step methods:
-
-- ERK3
-- ERK4
-- ERK4 with Richardson extrapolation
 
 ### Phase 2 – Work–Precision Comparison
 
