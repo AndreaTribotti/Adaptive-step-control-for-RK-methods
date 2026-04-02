@@ -1,4 +1,4 @@
-# Adaptive Step Control for Runge–Kutta Methods
+# 📘 Adaptive Step Control for Runge–Kutta Methods
 
 This project studies **adaptive step-size control strategies for explicit Runge–Kutta (ERK) methods** applied to the numerical solution of **initial value problems (IVPs)** for ordinary differential equations.
 
@@ -10,7 +10,7 @@ The work was developed for the **Numerical Methods course** at the **University 
 
 The project is divided into two phases.
 
-### Phase 1 – Adaptive Embedded Runge–Kutta Methods
+### 🧮 Phase 1 – Adaptive Embedded Runge–Kutta Methods
 
 We implement and test three embedded Runge–Kutta pairs with adaptive step control:
 
@@ -33,7 +33,7 @@ run_solver.m
 
 This script runs the solvers and prints the results for a fixed configuration.
 
-#### Interactive exploration
+#### 🖥️ Interactive exploration
 
 To explore the parameters interactively, open the MATLAB app:
 
@@ -53,7 +53,7 @@ It visualizes the solution, the step-size evolution and the errors behaviour.
 ---
 
 
-### Phase 2 – Work–Precision Comparison
+### 📊 Phase 2 – Work–Precision Comparison
 
 In the second phase, we compare **adaptive** and **fixed-step methods** on the **Brusselator system**.
 
@@ -80,7 +80,7 @@ This script generates the work–precision plot and the table used to compare th
 
 ---
 
-## Requirements
+## ⚙️ Requirements
 
 - MATLAB (with support for `.mlapp` apps)
 
