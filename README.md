@@ -6,7 +6,7 @@ The work was developed for the **Numerical Methods course** at the **University 
 
 ---
 
-## Project Overview
+## 📖 Project Overview
 
 The project is divided into two phases.
 
@@ -23,7 +23,7 @@ The methods are tested on:
 - the **Brusselator system**
 - two scalar ODE test problems.
 
-#### How to run
+#### 🚀 How to run
 
 To run a predefined experiment with fixed parameters:
 
@@ -70,7 +70,7 @@ In the second phase, we compare **adaptive** and **fixed-step methods** on the *
 The performance comparison is based on a **work–precision diagram**, where **global error** is evaluated against the **number of function evaluations**.
 To complement the global trends, a comparison table provides a **detailed performance snapshot for one representative configuration**.
 
-#### Run the comparison
+#### 🚀 Run the comparison
 
 ```matlab
 run_full_comparison.m
@@ -86,12 +86,12 @@ This script generates the work–precision plot and the table used to compare th
 
 ---
 
-## Detailed Report
+## 📒 Detailed Report
 For a full description of the methods, experiments, and results, see the full report: [*report_adaptive_step_control*](https://github.com/AndreaTribotti/Adaptive-step-control-for-RK-methods/blob/main/report_adaptive_step_control.pdf)  
 
 ---
 
-## References
+## 📚 References
 
 The adaptive step-size control strategy implemented in this project follows the framework described in:
 
@@ -101,7 +101,7 @@ Springer Series in Computational Mathematics.
 
 ---
 
-## Authors
+## 👥 Authors
 
 Andrea Tribotti  
 Leonardo Cittadini  
