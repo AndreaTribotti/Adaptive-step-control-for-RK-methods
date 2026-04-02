@@ -50,7 +50,7 @@ The app allows the user to:
 
 It visualizes the solution, the step-size evolution and the errors behaviour.
 
---
+***
 
 
 ### 📊 Phase 2 – Work–Precision Comparison
